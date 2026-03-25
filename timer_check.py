@@ -1,33 +1,54 @@
 import time
-import datetime                                    
+import datetime
+class ParkingTimer:                               
 
-entry_times = {}
-violations = {}                                   
+    def __init__(self, threshold_seconds=30):     
+        self.threshold    = threshold_seconds
+        self._entry_times = {}
+        self._zone_map    = {}                    
+        self.violations   = {}                    
 
-def vehicle_entered(vehicle_id, zone_name):       
-    if vehicle_id not in entry_times:
-        entry_times[vehicle_id] = time.time()
+    def update_threshold(self, threshold_seconds): 
+        self.threshold = threshold_seconds
 
-def vehicle_exited(vehicle_id):                 
-    entry_times.pop(vehicle_id, None)
+    def vehicle_in_zone(self, vehicle_id, zone_index, zone_name): 
+        if vehicle_id not in self._entry_times:
+            self._entry_times[vehicle_id] = time.time()
+            self._zone_map[vehicle_id] = zone_index           
 
-def get_duration(vehicle_id):
-    if vehicle_id in entry_times:
-        return time.time() - entry_times[vehicle_id]
-    return 0.0
+    def vehicle_out_of_zone(self, vehicle_id):    
+        self._entry_times.pop(vehicle_id, None)
+        self._zone_map.pop(vehicle_id, None)       
 
-def is_illegal(vehicle_id, threshold=30):
-    return get_duration(vehicle_id) >= threshold
+    def get_duration(self, vehicle_id):
+        if vehicle_id in self._entry_times:
+            return time.time() - self._entry_times[vehicle_id]
+        return 0.0
 
-def record_violation(vehicle_id, zone_name, vehicle_type):   
-    if vehicle_id not in violations:
-        violations[vehicle_id] = {
-            "vehicle_id":   vehicle_id,
-            "zone":         zone_name,
-            "vehicle_type": vehicle_type,
-            "timestamp":    datetime.datetime.now().strftime("%H:%M:%S"), 
-            "duration":     get_duration(vehicle_id),
-        }
+    def is_violation(self, vehicle_id):          
+        return self.get_duration(vehicle_id) >= self.threshold
 
-def get_all_violations():                         
-    return list(violations.values())
+    def record_violation(self, vehicle_id, zone_name, vehicle_type, timestamp=None):
+        duration = self.get_duration(vehicle_id)
+        ts = timestamp or datetime.datetime.now().strftime("%H:%M:%S")
+
+        if vehicle_id not in self.violations:
+            self.violations[vehicle_id] = {
+                "vehicle_id":   vehicle_id,
+                "vehicle_type": vehicle_type,
+                "zone":         zone_name,
+                "timestamp":    ts,
+                "duration":     duration,
+            }
+            return True                           
+        else:
+            self.violations[vehicle_id]["duration"] = duration 
+            return False                        
+
+    def get_all_violations(self):
+        return list(self.violations.values())
+
+    def clear(self):                              
+        self._entry_times.clear()
+        self._zone_map.clear()
+        self.violations.clear()

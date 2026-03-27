@@ -20,14 +20,11 @@ class VehicleDetector:
 
         for box in results.boxes:
             cls_id = int(box.cls[0])
-
             if cls_id not in self.VEHICLE_CLASS_IDS:       
                 continue
-
             conf = float(box.conf[0]) 
             if conf < self.confidence_threshold:          
                 continue
-
             x1, y1, x2, y2 = map(int, box.xyxy[0])
             class_name = self.VEHICLE_CLASS_IDS[cls_id]  
             detections.append((x1, y1, x2, y2, class_name, conf))  
